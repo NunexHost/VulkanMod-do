@@ -231,10 +231,8 @@ public class WorldRenderer {
 
                 this.renderRegionCache = new RenderRegionCache();
 
-                if(flag)
-                    this.updateRenderChunks();
-                else
-                    this.updateRenderChunksSpectator();
+
+                this.updateRenderChunksSpectator(flag);
 
                 this.minecraft.getProfiler().pop();
 
@@ -307,10 +305,10 @@ public class WorldRenderer {
         this.sectionGrid.chunkAreaManager.resetQueues();
     }
 
-    private void updateRenderChunks() {
+    private void updateRenderChunks(boolean spectator) {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
+        int buildLimit = taskDispatcher.getIdleThreadsCount() * (spectator ? 1 : (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3));
 
         if(buildLimit == 0)
             this.needsUpdate = true;
@@ -346,10 +344,9 @@ public class WorldRenderer {
 
     }
 
-    private void updateRenderChunksSpectator() {
-        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
+    private void updateRenderChunksSpectator(boolean spectator) {
 
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
+        int rebuildLimit = taskDispatcher.getIdleThreadsCount() * (spectator ? 1 : (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3));
 
         if(rebuildLimit == 0)
             this.needsUpdate = true;
@@ -366,10 +363,17 @@ public class WorldRenderer {
 
             this.scheduleUpdate(renderSection);
 
+            if(spectator || (renderSection.directionChanges > Initializer.CONFIG.advCulling))
+                continue;
+
             for(Direction direction : Util.DIRECTIONS) {
                 RenderSection relativeChunk = renderSection.getNeighbour(direction);
 
                 if (relativeChunk != null && !renderSection.hasDirection(direction.getOpposite())) {
+                    if (renderSection.hasMainDirection()) {
+                        if (!renderSection.visibilityBetween(renderSection.mainDir.getOpposite(), direction))
+                            continue;
+                    }
 
                     this.addNode(renderSection, relativeChunk, direction);
 

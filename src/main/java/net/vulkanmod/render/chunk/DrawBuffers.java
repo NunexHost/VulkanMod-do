@@ -24,7 +24,7 @@ public class DrawBuffers {
     private static final int INDEX_SIZE = Short.BYTES;
     public final int index;
     private final Vector3i origin;
-    private final int minHeight;
+    private final short minHeight;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
@@ -36,7 +36,7 @@ public class DrawBuffers {
 
         this.index = index;
         this.origin = origin;
-        this.minHeight = minHeight;
+        this.minHeight = (short) minHeight;
     }
 
     public void allocateBuffers() {
